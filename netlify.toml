@@ -1,4 +1,7 @@
 [build]
-  publish = "./"
-  command = ""
-  functions = ""
+  command = "npm run build"
+  publish = "dist"
+  environment = { NODE_VERSION = "18" }
+
+[functions]
+  directory = ""

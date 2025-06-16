@@ -9,7 +9,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // JSON verileri için 10MB sınır
+app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Form verileri için 10MB sınır
 
 // Kahve Falı API Çağrısı
 app.post('/api/read-coffee', async (req, res) => {
@@ -120,6 +121,7 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
+app.use(express.static('public'));
 app.listen(port, () => {
     console.log(`Sunucu http://localhost:${port} adresinde çalışıyor`);
 });

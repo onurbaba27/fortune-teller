@@ -430,7 +430,7 @@
         }
 
         .chat-messages {
-            height: 300px;
+            height: 400px; /* Increased height for more visibility */
             overflow-y: auto;
             margin-bottom: 20px;
             padding: 15px;
@@ -464,6 +464,7 @@
         .chat-input {
             display: flex;
             gap: 10px;
+            align-items: center; /* Align items vertically in the middle */
         }
 
         .chat-input input {
@@ -483,6 +484,7 @@
             cursor: pointer;
             font-size: 1em;
             transition: all 0.3s ease;
+            height: 46px; /* Match input height for better alignment */
         }
 
         .chat-input button:hover {
@@ -546,7 +548,7 @@
             .tarot-cards { grid-template-columns: repeat(3, 1fr); }
             .zodiac-wheel { width: 250px; height: 250px; }
             .coffee-cup { width: 150px; height: 150px; font-size: 4em; }
-            .chat-messages { height: 200px; }
+            .chat-messages { height: 300px; /* Adjusted for smaller screens too */ }
             .camera-section video, .camera-section img { max-width: 250px; }
         }
     </style>

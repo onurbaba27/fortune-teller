@@ -839,7 +839,7 @@
 
             try {
                 const base64Image = capturedPhoto.src.split(',')[1];
-                const response = await fetch('https://fortune-teller-backend.onrender.com/api/read-coffee', {
+                const response = await fetch('https://fortune-teller-backend.onrender.com', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1066,7 +1066,7 @@
             showTypingIndicator();
             
             try {
-                const response = await fetch('https://fortune-teller-backend.onrender.com/api/chat', {
+                const response = await fetch('https://fortune-teller-backend.onrender.com/api/read-coffee', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

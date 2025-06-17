@@ -1,3 +1,6 @@
+console.log('Environment check:');
+console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
+console.log('NODE_ENV:', process.env.NODE_ENV);
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');

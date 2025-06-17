@@ -54,7 +54,7 @@ app.get('/healthcheck', (req, res) => {
   });
 });
 
-// 5. CORE API ENDPOINT
+// 5. CORE API ENDPOINT - COFFEE READING
 app.post('/api/read-coffee', async (req, res) => {
   try {
     const { base64Image } = req.body;
@@ -134,7 +134,78 @@ app.post('/api/read-coffee', async (req, res) => {
   }
 });
 
-// 6. STATIC FILES
+// 6. CHAT API ENDPOINT
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { message, history } = req.body;
+
+    // Girdi doğrulaması
+    if (!message || !history) {
+      return res.status(400).json({
+        error: 'Geçersiz istek: Mesaj ve geçmiş gerekli',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Gemini API'sine istek oluştur
+    const apiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Custom-Header': 'FortuneTeller/1.0'
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{
+              text: "Sen mistik bir falcısın. Adın 'Mistik Falcı'. Kendini asla yapay zeka olarak tanıtma. Her zaman gizemli, bilge ve biraz sır dolu bir üslup kullan. Cevaplarında astroloji, numeroloji, tarot ve diğer kehanet yöntemlerinden bahsedebilirsin. Cevapların kısa ve özlü olsun, maksimum 3-4 cümle. Bazen soruyu cevaplamadan önce 'Kartlara bakıyorum...', 'Kristal küremde görüyorum ki...', 'Yıldızların konumuna göre...' gibi girişler yap. Türkçe cevaplar ver ve asla İngilizce konuşma."
+            }]
+          },
+          contents: history.concat({
+            role: "user",
+            parts: [{ text: message }]
+          }),
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 200
+          }
+        })
+      }
+    );
+
+    if (!apiResponse.ok) {
+      const errorData = await apiResponse.json();
+      throw new Error(`API Hatası: ${errorData.error?.message || 'Bilinmeyen hata'}`);
+    }
+
+    const responseData = await apiResponse.json();
+    const prediction = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!prediction) throw new Error("API'den boş yanıt alındı");
+
+    res.json({
+      success: true,
+      response: prediction,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Sohbet Hatası:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+
+    res.status(500).json({
+      error: "Sohbet sunucusunda geçici sorun",
+      solution: "Lütfen 1 dakika sonra tekrar deneyin",
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 7. STATIC FILES
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '1d',
   setHeaders: (res, filePath) => {
@@ -144,7 +215,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
-// 7. ERROR HANDLER
+// 8. ERROR HANDLER
 app.use((err, req, res, next) => {
   console.error('Sunucu Hatası:', {
     path: req.path,
@@ -160,14 +231,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 8. START SERVER
+// 9. START SERVER
 const server = app.listen(port, () => {
   console.log(`🚀 Sunucu başlatıldı: http://localhost:${port}`);
   console.log(`📊 Healthcheck: http://localhost:${port}/healthcheck`);
   console.log(`🌍 Canlı URL: https://fortune-teller-backend.onrender.com`);
 });
 
-// 9. GRACEFUL SHUTDOWN
+// 10. GRACEFUL SHUTDOWN
 process.on('SIGTERM', () => {
   console.log('⏳ Sunucu kapatılıyor...');
   server.close(() => {

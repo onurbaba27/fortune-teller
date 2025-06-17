@@ -2,130 +2,181 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const fetch = require('node-fetch');
+const path = require('path');
 
+// 1. INITIAL SETUP
 dotenv.config();
-
 const app = express();
 const port = process.env.PORT || 3000;
+const VERSION = "1.0.4";
 
-// 1. GELİŞMİŞ CORS AYARLARI (Tüm cihazlar için)
+// 2. ENHANCED CORS CONFIGURATION
 const allowedOrigins = [
   'https://fortune-teller-backend.onrender.com',
-  'http://localhost:3000', // Frontend geliştirme adresi
-  /\.render\.com$/, // Tüm Render subdomainleri
-  'http://192.168.*', // Yerel ağdaki tüm IP'ler (telefon için)
-  'capacitor://localhost', // Capacitor uygulamaları
-  'ionic://localhost' // Ionic uygulamaları
+  'http://localhost:3000',
+  /\.render\.com$/,
+  /http:\/\/192\.168\.\d+\.\d+/,
+  'capacitor://localhost',
+  'ionic://localhost'
 ];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Postman gibi araçlardan gelen isteklere izin ver
-    if (!origin || allowedOrigins.some(allowed => {
-      return typeof allowed === 'string' 
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.some(allowed => 
+      typeof allowed === 'string' 
         ? origin.startsWith(allowed) 
-        : allowed.test(origin);
-    })) {
+        : allowed.test(origin)
+    )) {
       callback(null, true);
     } else {
-      console.warn('CORS Engellendi:', origin);
-      callback(new Error('CORS politikası tarafından engellendi'));
+      console.warn('Blocked by CORS:', origin);
+      callback(new Error('CORS policy violation'));
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'Accept'
-  ],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  maxAge: 86400 // Önbellek süresi (saniye)
-};
-
-app.use(cors(corsOptions));
-
-// 2. OPTIONS METODU İÇİN ÖZEL HANDLER
-app.options('*', cors(corsOptions));
-
-// 3. BODY PARSER AYARLARI
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ 
-  extended: true, 
-  limit: '10mb',
-  parameterLimit: 10000
+  maxAge: 86400
 }));
 
-// 4. HEALTHCHECK ENDPOINT (Render için kritik)
+// 3. MIDDLEWARE CONFIGURATION
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// 4. HEALTHCHECK ENDPOINT
 app.get('/healthcheck', (req, res) => {
   res.status(200).json({
     status: 'OK',
-    serverTime: new Date().toISOString(),
-    version: '1.0.1',
+    version: VERSION,
+    timestamp: new Date().toISOString(),
+    nodeVersion: process.version,
     environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// 5. KAHVE FALI ENDPOINT (Güncellendi)
+// 5. CORE API ENDPOINT
 app.post('/api/read-coffee', async (req, res) => {
   try {
-    /* ... (Önceki kodunuz aynen kalacak) ... */
-  } catch (error) {
-    console.error('Hata Detayı:', {
-      message: error.message,
-      stack: error.stack,
-      requestBody: req.body
-    });
+    const { base64Image } = req.body;
     
+    if (!base64Image?.match(/^data:image\/(png|jpeg|jpg);base64,/)) {
+      return res.status(400).json({
+        error: 'Geçersiz resim formatı',
+        solution: 'Lütfen geçerli bir base64 kodlanmış PNG/JPEG resmi sağlayın',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const apiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Custom-Header': 'FortuneTeller/1.0'
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{
+              text: "Sen mistik bir falcısın. Adın 'Mistik Falcı'. Kendini asla yapay zeka olarak tanıtma. Her zaman gizemli, bilge ve biraz sır dolu bir üslup kullan. Cevaplarında astroloji, numeroloji, tarot ve diğer kehanet yöntemlerinden bahsedebilirsin. Türkçe cevaplar ver ve asla İngilizce konuşma."
+            }]
+          },
+          contents: [{
+            role: "user",
+            parts: [
+              {
+                text: "Fincandaki kahve telvesi şekillerini oku ve bana mistik, gerçekçi bir kahve falı yorumu yap. Yorum 5 paragraf uzunluğunda olsun, her biri 4-5 cümle içersin ve sırasıyla aşk, kariyer, sağlık, aile ve maneviyat konularına odaklansın. Şekiller, semboller ve anlamları üzerinden kehanette bulun."
+              },
+              {
+                inlineData: {
+                  mimeType: "image/png",
+                  data: base64Image.split(',')[1]
+                }
+              }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 500
+          }
+        })
+      }
+    );
+
+    if (!apiResponse.ok) {
+      const errorData = await apiResponse.json();
+      throw new Error(`API Hatası: ${errorData.error?.message || 'Bilinmeyen hata'}`);
+    }
+
+    const responseData = await apiResponse.json();
+    const prediction = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!prediction) throw new Error("API'den boş yanıt alındı");
+
+    res.json({
+      success: true,
+      response: prediction,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Fal Okuma Hatası:', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+
     res.status(500).json({
       error: "Fal sunucusunda geçici sorun",
       solution: "Lütfen 1 dakika sonra tekrar deneyin",
-      requestId: req.id,
       timestamp: new Date().toISOString()
     });
   }
 });
 
-// 6. GELİŞMİŞ HATA YÖNETİMİ
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    return res.status(400).json({ 
-      error: "Geçersiz JSON verisi",
-      solution: "Lütfen istek gövdesini kontrol edin"
-    });
-  }
-  next();
-});
-
-// 7. STATİK DOSYALAR
-app.use(express.static('public', {
+// 6. STATIC FILES
+app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '1d',
-  setHeaders: (res, path) => {
-    if (path.endsWith('.html')) {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-cache');
     }
   }
 }));
 
-// 8. BAŞLANGIÇ KONTROLLERİ
-app.listen(port, async () => {
-  console.log(`🚀 Sunucu başlatıldı: http://localhost:${port}`);
-  console.log(`🌐 Canlı URL: https://fortune-teller-backend.onrender.com`);
-  
-  // Sunucu başlangıç testi
-  try {
-    const healthcheck = await fetch(`http://localhost:${port}/healthcheck`);
-    console.log(healthcheck.ok ? '✅ Sağlık kontrolü başarılı' : '❌ Sağlık kontrolü başarısız');
-  } catch (error) {
-    console.error('⛔ Sunucu başlatma hatası:', error);
-  }
+// 7. ERROR HANDLER
+app.use((err, req, res, next) => {
+  console.error('Sunucu Hatası:', {
+    path: req.path,
+    method: req.method,
+    error: err.stack,
+    timestamp: new Date().toISOString()
+  });
+
+  res.status(500).json({
+    error: "Beklenmeyen sunucu hatası",
+    solution: "Lütfen daha sonra tekrar deneyin",
+    timestamp: new Date().toISOString()
+  });
 });
 
-// 9. SİNYAL YÖNETİMİ (Render için önemli)
+// 8. START SERVER
+const server = app.listen(port, () => {
+  console.log(`🚀 Sunucu başlatıldı: http://localhost:${port}`);
+  console.log(`📊 Healthcheck: http://localhost:${port}/healthcheck`);
+  console.log(`🌍 Canlı URL: https://fortune-teller-backend.onrender.com`);
+});
+
+// 9. GRACEFUL SHUTDOWN
 process.on('SIGTERM', () => {
   console.log('⏳ Sunucu kapatılıyor...');
   server.close(() => {
     console.log('🔴 Sunucu durduruldu');
     process.exit(0);
   });
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ Yakalanmayan Hata:', err);
+  process.exit(1);
 });

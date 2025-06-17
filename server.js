@@ -157,7 +157,7 @@ app.post('/api/read-coffee', async (req, res) => {
           contents: [{
             parts: [
               {
-                text: "Fincandaki kahve telvesi şekillerini oku ve bana mistik, gerçekçi bir kahve falı yorumu yap. Yorum 5 paragraf uzunluğunda olsun, her biri 4-5 cümle içersin ve sırasıyla aşk, kariyer, sağlık, aile ve maneviyat konularına odaklansın. Şekiller, semboller ve anlamları üzerinden kehanette bulun."
+                text: "Fincandaki kahve telvesi şekillerini oku ve bana mistik, gerçekçi bir kahve falı yorumu yap. Yorum 5 paragraf uzunluğunda olsun, her biri 4-5 cümle içersin ve sırasıyla aşk, kariyer, sağlık, aile ve maneviyat konularına odaklansın. Fincandaki şekiller, sembollerin neye benzediklerini söyle ve anlamları üzerinden kehanette bulun."
               },
               {
                 inlineData: {

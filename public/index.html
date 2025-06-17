@@ -1005,19 +1005,22 @@
         }
 
         function getAstrology() {
-            const birthDate = document.getElementById('birthDate').value;
+            const birthDateInput = document.getElementById('birthDate').value;
             const birthTime = document.getElementById('birthTime').value;
             
-            if (!birthDate) {
+            if (!birthDateInput) {
                 alert('Lütfen doğum tarihinizi girin!');
                 return;
             }
 
-            const date = new Date(birthDate);
-            const month = date.getMonth() + 1;
-            const day = date.getDate();
+            const birthDate = new Date(birthDateInput);
+            const month = birthDate.getMonth() + 1; // getMonth() returns 0-11
+            const day = birthDate.getDate();
 
             const zodiacSigns = [
+                { name: "Oğlak", dates: [[12, 22], [1, 19]], traits: "Disiplinli, sorumlu, hırslı", element: "Toprak" },
+                { name: "Kova", dates: [[1, 20], [2, 18]], traits: "Bağımsız, yaratıcı, özgün", element: "Hava" },
+                { name: "Balık", dates: [[2, 19], [3, 20]], traits: "Şefkatli, sezgisel, rüyacı", element: "Su" },
                 { name: "Koç", dates: [[3, 21], [4, 19]], traits: "Enerjik, lider, cesur", element: "Ateş" },
                 { name: "Boğa", dates: [[4, 20], [5, 20]], traits: "Kararlı, pratik, güvenilir", element: "Toprak" },
                 { name: "İkizler", dates: [[5, 21], [6, 20]], traits: "Meraklı, sosyal, değişken", element: "Hava" },
@@ -1026,10 +1029,7 @@
                 { name: "Başak", dates: [[8, 23], [9, 22]], traits: "Detaycı, pratik, mükemmeliyetçi", element: "Toprak" },
                 { name: "Terazi", dates: [[9, 23], [10, 22]], traits: "Dengeli, adil, diplomatik", element: "Hava" },
                 { name: "Akrep", dates: [[10, 23], [11, 21]], traits: "Yoğun, gizemli, tutkulu", element: "Su" },
-                { name: "Yay", dates: [[11, 22], [12, 21]], traits: "Özgür, iyimser, maceraperest", element: "Ateş" },
-                { name: "Oğlak", dates: [[12, 22], [1, 19]], traits: "Disiplinli, sorumlu, hırslı", element: "Toprak" },
-                { name: "Kova", dates: [[1, 20], [2, 18]], traits: "Bağımsız, yaratıcı, özgün", element: "Hava" },
-                { name: "Balık", dates: [[2, 19], [3, 20]], traits: "Şefkatli, sezgisel, rüyacı", element: "Su" }
+                { name: "Yay", dates: [[11, 22], [12, 21]], traits: "Özgür, iyimser, maceraperest", element: "Ateş" }
             ];
 
             let userSign = null;
@@ -1037,14 +1037,17 @@
                 const [startMonth, startDay] = sign.dates[0];
                 const [endMonth, endDay] = sign.dates[1];
                 
-                // Handle cases where the sign spans across year end (e.g., Dec-Jan)
-                if (startMonth <= endMonth) {
-                    if (month === startMonth && day >= startDay && month <= endMonth && day <= endDay) {
+                // Check for signs that span across the year end (e.g., Capricorn: Dec 22 - Jan 19)
+                if (startMonth > endMonth) { // This means the sign crosses the year boundary
+                    if ((month === startMonth && day >= startDay) || (month === endMonth && day <= endDay)) {
                         userSign = sign;
                         break;
                     }
-                } else { // Spans across year end (e.g., Capricorn: Dec 22 - Jan 19)
-                    if ((month === startMonth && day >= startDay) || (month === endMonth && day <= endDay)) {
+                } else { // Normal signs within the same year
+                    if (month === startMonth && day >= startDay && month === endMonth && day <= endDay) {
+                        userSign = sign;
+                        break;
+                    } else if (month > startMonth && month < endMonth) { // For months strictly between start and end months
                         userSign = sign;
                         break;
                     }
@@ -1053,10 +1056,38 @@
 
             // Fallback if no sign is found (shouldn't happen with full date ranges)
             if (!userSign) {
-                // This might indicate an error in date ranges or input
-                userSign = { name: "Bilinmeyen Burç", element: "Belirsiz", traits: "Verilerinizle burcunuz bulunamadı." };
+                 // This is a catch-all for dates that might fall exactly on a boundary or outside defined ranges if any.
+                 // It could also happen if the logic above isn't exhaustive for all edge cases.
+                 // For now, let's try a simpler check as a last resort, assuming standard zodiac definitions.
+                for (let sign of zodiacSigns) {
+                    const [startMonth, startDay] = sign.dates[0];
+                    const [endMonth, endDay] = sign.dates[1];
+                    
+                    if (startMonth > endMonth) { // e.g., Dec-Jan
+                        if (month === startMonth && day >= startDay) {
+                            userSign = sign;
+                            break;
+                        } else if (month === endMonth && day <= endDay) {
+                            userSign = sign;
+                            break;
+                        }
+                    } else { // e.g., Jan-Feb, Feb-Mar etc.
+                        if (month === startMonth && day >= startDay) {
+                            userSign = sign;
+                            break;
+                        } else if (month === endMonth && day <= endDay) {
+                            userSign = sign;
+                            break;
+                        } else if (month > startMonth && month < endMonth) {
+                            userSign = sign;
+                            break;
+                        }
+                    }
+                }
+                if (!userSign) { // If still not found, set to unknown
+                    userSign = { name: "Bilinmeyen Burç", element: "Belirsiz", traits: "Verilerinizle burcunuz bulunamadı." };
+                }
             }
-
 
             const predictions = [
                 "Bu hafta size çok uygun bir dönem. Yeni projelere başlamak için ideal zaman.",

@@ -603,12 +603,18 @@
         <div class="fortune-content" id="coffee">
             <button class="back-btn" onclick="showCategories()">← Geri Dön</button>
             <h2>☕ Kahve Falı</h2>
-            <p>Fincanınızı çevirin ve fotoğrafını çekin:</p>
-            <div class="coffee-cup" id="coffeeCup" onclick="startCamera()">☕</div>
+            <p>Fincanınızı çevirin ve fotoğrafını çekin veya galeriden seçin:</p>
+            <div class="coffee-cup" id="coffeeCup" onclick="promptCameraOrGallery()">☕</div>
             <div class="camera-section" id="cameraSection" style="display:none;">
                 <video id="video" width="300" height="200" autoplay></video>
-                <button class="fortune-btn" onclick="capturePhoto()">Fotoğraf Çek</button>
-                <canvas id="canvas"></canvas>
+                <div style="margin-top: 10px;">
+                    <button class="fortune-btn" onclick="startCamera('environment')">Arka Kamera</button>
+                    <button class="fortune-btn" onclick="startCamera('user')">Ön Kamera</button>
+                    <input type="file" accept="image/*" onchange="uploadPhoto(event)" style="display:none;" id="galleryUpload">
+                    <button class="fortune-btn" onclick="document.getElementById('galleryUpload').click()">Galeriden Seç</button>
+                </div>
+                <button class="fortune-btn" onclick="capturePhoto()" id="captureBtn" style="display:none;">Fotoğraf Çek</button>
+                <canvas id="canvas" style="display:none;"></canvas>
                 <img id="capturedPhoto" style="display:none;" />
             </div>
             <div id="coffeeResult" class="result-box" style="display:none;">
@@ -750,16 +756,17 @@
             selectedTarotCards = []; // Seçili kartları sıfırla
             document.getElementById('tarotResult').style.display = 'none'; // Sonucu gizle
 
-            // Kamerayı kapat
+            // Kamerayı kapat ve kahve falı arayüzünü sıfırla
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
                 stream = null;
                 document.getElementById('video').srcObject = null;
-                document.getElementById('cameraSection').style.display = 'none';
-                document.getElementById('coffeeCup').style.display = 'flex';
-                document.getElementById('capturedPhoto').style.display = 'none';
-                document.getElementById('coffeeResult').style.display = 'none';
             }
+            document.getElementById('cameraSection').style.display = 'none';
+            document.getElementById('coffeeCup').style.display = 'flex';
+            document.getElementById('capturedPhoto').style.display = 'none';
+            document.getElementById('coffeeResult').style.display = 'none';
+            document.getElementById('captureBtn').style.display = 'none'; // Fotoğraf çek butonunu gizle
         }
 
         function createTarotCards() {
@@ -837,20 +844,32 @@
             resultDiv.style.display = 'block';
         }
 
-        // Kamera fonksiyonları
-        async function startCamera() {
+        // Kamera ve Galeri Fonksiyonları
+        function promptCameraOrGallery() {
+            document.getElementById('coffeeCup').style.display = 'none';
+            document.getElementById('cameraSection').style.display = 'block';
+        }
+
+        async function startCamera(facingMode) {
             const video = document.getElementById('video');
             const cameraSection = document.getElementById('cameraSection');
-            const coffeeCup = document.getElementById('coffeeCup');
+            const captureBtn = document.getElementById('captureBtn');
+
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
 
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
                 video.srcObject = stream;
-                cameraSection.style.display = 'block';
-                coffeeCup.style.display = 'none';
+                video.style.display = 'block';
+                captureBtn.style.display = 'block';
+                document.getElementById('capturedPhoto').style.display = 'none'; // Gizle
             } catch (error) {
                 console.error("Kamera Hatası:", error);
                 alert("Kameraya erişilemedi. Lütfen cihazınızın kamera iznini kontrol edin veya HTTPS üzerinden bağlanın.");
+                video.style.display = 'none';
+                captureBtn.style.display = 'none';
             }
         }
 
@@ -859,6 +878,7 @@
             const canvas = document.getElementById('canvas');
             const capturedPhoto = document.getElementById('capturedPhoto');
             const cameraSection = document.getElementById('cameraSection');
+            const captureBtn = document.getElementById('captureBtn');
 
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -868,25 +888,63 @@
 
             capturedPhoto.src = canvas.toDataURL('image/png');
             capturedPhoto.style.display = 'block';
+            video.style.display = 'none'; // Kamerayı gizle
+            captureBtn.style.display = 'none'; // Fotoğraf çek butonunu gizle
 
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
                 stream = null;
             }
             video.srcObject = null;
-            cameraSection.style.display = 'none';
+            cameraSection.style.display = 'block'; // Kamera bölümünü görünür tut
 
             readCoffee();
         }
+
+        function uploadPhoto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const capturedPhoto = document.getElementById('capturedPhoto');
+                capturedPhoto.src = e.target.result;
+                capturedPhoto.style.display = 'block';
+
+                document.getElementById('video').style.display = 'none'; // Kamerayı gizle
+                document.getElementById('captureBtn').style.display = 'none'; // Fotoğraf çek butonunu gizle
+                if (stream) { // Eğer kamera açıksa kapat
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                    document.getElementById('video').srcObject = null;
+                }
+                
+                readCoffee();
+            };
+            reader.readAsDataURL(file);
+        }
+
 
         function resetCoffeeFortune() {
             const coffeeCup = document.getElementById('coffeeCup');
             const capturedPhoto = document.getElementById('capturedPhoto');
             const coffeeResult = document.getElementById('coffeeResult');
+            const cameraSection = document.getElementById('cameraSection');
+            const video = document.getElementById('video');
+            const captureBtn = document.getElementById('captureBtn');
 
             coffeeCup.style.display = 'flex';
             capturedPhoto.style.display = 'none';
             coffeeResult.style.display = 'none';
+            cameraSection.style.display = 'none'; // Kamera bölümünü tamamen gizle
+            video.style.display = 'none'; // Video elementini gizle
+            captureBtn.style.display = 'none'; // Fotoğraf çek butonunu gizle
+
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                video.srcObject = null;
+            }
         }
 
         async function readCoffee() {

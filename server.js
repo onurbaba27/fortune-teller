@@ -244,8 +244,9 @@ app.get('/api/routes', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🎯 Fortune Teller Server çalışıyor: http://localhost:${PORT}`);
-  console.log(`💚 Healthcheck: http://localhost:${PORT}/healthcheck`);
-  console.log(`🛠️  Routes: http://localhost:${PORT}/api/routes`);
+// ✅ Render için düzeltilmiş app.listen
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🎯 Fortune Teller Server çalışıyor: http://0.0.0.0:${PORT}`);
+  console.log(`💚 Healthcheck: http://0.0.0.0:${PORT}/healthcheck`);
+  console.log(`🛠️  Routes: http://0.0.0.0:${PORT}/api/routes`);
 });

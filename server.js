@@ -1,4 +1,5 @@
 console.log('Environment check:');
+console.log('GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
 console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
 console.log('NODE_ENV:', process.env.NODE_ENV);
 const express = require('express');
@@ -6,7 +7,6 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const fetch = require('node-fetch');
 const path = require('path');
-
 // 1. INITIAL SETUP
 dotenv.config();
 const app = express();

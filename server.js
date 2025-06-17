@@ -18,7 +18,6 @@ app.get('/healthcheck', (req, res) => {
   });
 });
 
-// Eksik olan chat endpoint'ini ekliyoruz
 app.post('/api/chat', async (req, res) => {
   try {
     const { message, birthDate, name } = req.body;
@@ -32,6 +31,12 @@ app.post('/api/chat', async (req, res) => {
         timestamp: new Date().toISOString()
       });
     }
+
+    // Mesajın günlük veya kısa olup olmadığını kontrol et
+    const isCasualMessage = message.length < 20 || ['naber', 'merhaba', 'selam', 'nasılsın'].some(greeting => message.toLowerCase().includes(greeting));
+    const instruction = isCasualMessage
+      ? `Kullanıcı Adı: ${name || 'Bilinmiyor'}\nDoğum Tarihi: ${birthDate || 'Belirtilmemiş'}\nMesaj: ${message}\nBu bilgilere dayanarak mistik, bilge ve kısa bir yanıt ver. Tek paragraf, 2-3 cümle yeterlidir. Gizemli üslubunu koru.`
+      : `Kullanıcı Adı: ${name || 'Bilinmiyor'}\nDoğum Tarihi: ${birthDate || 'Belirtilmemiş'}\nMesaj: ${message}\nBu bilgilere dayanarak mistik bir yorum yap ve gelecekle ilgili kehanetlerde bulun. Yaklaşık 3-4 paragraf uzunluğunda olsun.`;
 
     // Gemini API'ye istek gönder
     const apiResponse = await fetch(
@@ -50,16 +55,12 @@ app.post('/api/chat', async (req, res) => {
           },
           contents: [{
             parts: [{
-              text: `Kullanıcı Adı: ${name || 'Bilinmiyor'}
-Doğum Tarihi: ${birthDate || 'Belirtilmemiş'}
-Mesaj: ${message}
-
-Bu bilgilere dayanarak mistik bir yorum yap ve gelecekle ilgili kehanetlerde bulun. Yaklaşık 3-4 paragraf uzunluğunda olsun.`
+              text: instruction
             }]
           }],
           generationConfig: {
             temperature: 0.8,
-            maxOutputTokens: 400,
+            maxOutputTokens: isCasualMessage ? 100 : 400,
             topP: 0.9,
             topK: 40
           }

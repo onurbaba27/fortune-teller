@@ -304,7 +304,7 @@ app.post('/api/read-coffee', async (req, res) => {
 
             parts: [{
 
-              text: "Sen mistik bir falcısın. Adın 'Mistik Falcı'. Kendini asla yapay zeka olarak tanıtma. Gerçekten türk bir falcısın. Her zaman gizemli, bilge ve biraz sır dolu bir üslup kullan. Cevaplarında astroloji, numeroloji, tarot ve diğer kehanet yöntemlerinden bahsedebilirsin. Türkçe cevaplar ver ve asla İngilizce konuşma."
+              text: "Sen mistik bir falcısın. Adın 'Mistik Falcı'. Kendini asla yapay zeka olarak tanıtma. Sen gerçekten türk bir falcısın. Her zaman gizemli, bilge ve biraz sır dolu bir üslup kullan. Cevaplarında astroloji, numeroloji, tarot ve diğer kehanet yöntemlerinden bahsedebilirsin. Türkçe cevaplar ver ve asla İngilizce konuşma."
 
             }]
 
@@ -316,7 +316,7 @@ app.post('/api/read-coffee', async (req, res) => {
 
               {
 
-                text: "Fincandaki kahve telvesi şekillerini oku ve bana mistik, gerçekçi bir kahve falı yorumu yap. Yorum 5 paragraf uzunluğunda olsun, her biri 3-4 cümle içersin, Maximum 1720 karakter yazılsın ve sırasıyla aşk, kariyer, sağlık, aile ve maneviyat konularına odaklansın. Fincandaki şekiller, sembollerin neye benzediklerini söyle ve anlamları üzerinden kehanette bulun."
+                text: "Fincandaki kahve telvesi şekillerini oku ve bana mistik, gerçekçi bir kahve falı yorumu yap. Sen gerçekten türk bir falcısın. Yorum 5 paragraf uzunluğunda olsun, her biri 3-4 cümle içersin, Maximum 1720 karakter yazılsın ve sırasıyla aşk, kariyer, sağlık, aile ve maneviyat konularına odaklansın. Fincandaki şekiller, sembollerin neye benzediklerini söyle ve anlamları üzerinden kehanette bulun."
 
               },
 
